@@ -1,4 +1,4 @@
-package com.example.notification.notif;
+package com.example.notification.template.enums;
 
 /**
  * @Date 11/05/2026

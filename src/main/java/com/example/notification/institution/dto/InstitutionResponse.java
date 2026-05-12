@@ -1,4 +1,4 @@
-package com.example.notification.institution;
+package com.example.notification.institution.dto;
 
 import java.util.UUID;
 

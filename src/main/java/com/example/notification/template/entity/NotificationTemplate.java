@@ -1,23 +1,21 @@
-package com.example.notification.notif;
+package com.example.notification.template.entity;
 
 import com.example.notification.common.BaseEntity;
 import com.example.notification.institution.Institution;
 import com.example.notification.template.enums.ChannelType;
 import com.example.notification.template.enums.NotificationCategory;
-import com.example.notification.template.entity.NotificationTemplate;
-import com.example.notification.user.entity.NotificationUser;
+import com.example.notification.template.enums.TemplateFormat;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.Instant;
-
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notification_templates")
 @Getter
 @Setter
-public class Notification extends BaseEntity {
+public class NotificationTemplate extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -25,11 +23,11 @@ public class Notification extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private NotificationStatus status;
+    private ChannelType channel;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ChannelType channel;
+    private TemplateFormat format;
 
     @Column(nullable = false)
     private String subject;
@@ -38,18 +36,14 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private String body;
 
-    private Instant sentAt;
-
-    private Instant readAt;
-
-    private String errorMessage;
-
     @ManyToOne(optional = false)
     private Institution institution;
 
-    @ManyToOne(optional = false)
-    private NotificationUser user;
-
-    @ManyToOne
-    private NotificationTemplate template;
+    @OneToMany(
+            mappedBy = "template",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<TemplateVariable> variables =
+            new ArrayList<>();
 }

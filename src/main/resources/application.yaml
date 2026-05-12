@@ -1,3 +1,19 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: Notification
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: simonodoh8@gmail.com
+    password: cfucrhimvrhklruf
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: smtp.gmail.com

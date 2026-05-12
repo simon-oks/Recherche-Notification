@@ -1,4 +1,7 @@
-package com.example.notification.institution;
+package com.example.notification.institution.mapper;
+
+import com.example.notification.institution.Institution;
+import com.example.notification.institution.dto.InstitutionResponse;
 
 public class InstitutionMapper {
 
