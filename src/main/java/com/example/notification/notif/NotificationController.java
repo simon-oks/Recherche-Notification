@@ -2,7 +2,6 @@ package com.example.notification.notif;
 
 import com.example.notification.notif.dto.NotificationResponse;
 import com.example.notification.notif.dto.SendNotificationRequest;
-import com.example.notification.notif.mapper.NotificationMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,12 +22,6 @@ public class NotificationController {
     public NotificationResponse send(
             @RequestBody SendNotificationRequest request
     ) {
-
-        Notification notification =
-                service.send(request);
-
-        return NotificationMapper.toResponse(
-                notification
-        );
+        return service.send(request);
     }
 }

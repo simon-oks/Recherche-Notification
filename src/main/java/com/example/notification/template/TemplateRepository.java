@@ -21,4 +21,10 @@ public interface TemplateRepository
             NotificationCategory category,
             ChannelType channel
     );
+
+    Optional<NotificationTemplate> findByInstitution_CodeAndCategoryAndChannel(
+            String institutionCode,
+            NotificationCategory category,
+            ChannelType channel
+    );
 }

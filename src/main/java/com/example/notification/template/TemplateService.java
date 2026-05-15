@@ -83,4 +83,22 @@ public class TemplateService {
                                 "Template not found"
                         ));
     }
+
+    public NotificationTemplate find(
+            String institutionCode,
+            NotificationCategory category,
+            ChannelType channel
+    ) {
+
+        return repository
+                .findByInstitution_CodeAndCategoryAndChannel(
+                        institutionCode,
+                        category,
+                        channel
+                )
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Template not found"
+                        ));
+    }
 }

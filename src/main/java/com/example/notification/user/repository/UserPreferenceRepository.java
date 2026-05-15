@@ -5,6 +5,7 @@ import com.example.notification.user.entity.NotificationUser;
 import com.example.notification.user.entity.UserPreference;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,5 +16,8 @@ public interface UserPreferenceRepository
     findByUserAndChannel(
             NotificationUser user,
             ChannelType channel
+    );
+    List<UserPreference> findByUserAndEnabledTrue(
+            NotificationUser user
     );
 }

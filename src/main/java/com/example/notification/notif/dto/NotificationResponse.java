@@ -1,9 +1,8 @@
 package com.example.notification.notif.dto;
 
-import com.example.notification.notif.NotificationStatus;
-import com.example.notification.template.enums.ChannelType;
 import com.example.notification.template.enums.NotificationCategory;
 
+import java.util.List;
 import java.util.UUID;
 
 public record NotificationResponse(
@@ -14,9 +13,6 @@ public record NotificationResponse(
 
         NotificationCategory category,
 
-        ChannelType channel,
-
-        NotificationStatus status
-
+        List<ChannelNotificationResponse> channelNotifications
 ) {
 }

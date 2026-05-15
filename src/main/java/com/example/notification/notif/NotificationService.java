@@ -2,11 +2,14 @@ package com.example.notification.notif;
 
 import com.example.notification.channel.ChannelResolver;
 import com.example.notification.channel.NotificationChannel;
-import com.example.notification.institution.Institution;
 import com.example.notification.institution.InstitutionService;
+import com.example.notification.notif.dto.ChannelNotificationResponse;
+import com.example.notification.notif.dto.NotificationResponse;
 import com.example.notification.notif.dto.SendNotificationRequest;
+import com.example.notification.notif.mapper.NotificationMapper;
 import com.example.notification.template.entity.NotificationTemplate;
 import com.example.notification.template.TemplateService;
+import com.example.notification.template.enums.ChannelType;
 import com.example.notification.template.renderer.RendererResolver;
 import com.example.notification.template.renderer.TemplateRenderer;
 import com.example.notification.template.validation.TemplateVariableValidator;
@@ -18,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,21 +39,9 @@ public class NotificationService {
     private final TemplateVariableValidator validator;
     private final ChannelResolver channelResolver;
 
-    public Notification send(
+    public NotificationResponse send(
             SendNotificationRequest request
     ) {
-
-        Institution institution =
-                institutionService.findByCode(
-                        request.institutionCode()
-                );
-
-        NotificationTemplate template =
-                templateService.find(
-                        institution,
-                        request.category(),
-                        request.channel()
-                );
 
         NotificationUser user =
                 userService.find(
@@ -56,94 +49,64 @@ public class NotificationService {
                         request.externalUserId()
                 );
 
-        UserPreference preference =
-                preferenceRepository
-                        .findByUserAndChannel(
-                                user,
-                                request.channel()
-                        )
-                        .orElse(null);
+        List<UserPreference> preferences = preferenceRepository.findByUserAndEnabledTrue(user);
 
-        if (preference != null
-                && !preference.isEnabled()) {
+        Notification notification = new Notification();
+        List<ChannelNotificationResponse> channelNotifications = new ArrayList<>();
 
-            throw new RuntimeException(
-                    "Channel disabled for user"
+        // Envoyer la notification sur chaque canal de l'utilisateur
+        for (UserPreference preference : preferences) {
+
+            ChannelType channel = preference.getChannel();
+
+            NotificationTemplate template = templateService.find(
+                    request.institutionCode(),
+                    request.category(),
+                    channel
             );
+
+            // Resolve the renderer
+            TemplateRenderer renderer = rendererResolver.resolve(template.getFormat());
+
+            // Render the template
+            String subject = renderer.render(template.getSubject(), request.variables());
+            String body = renderer.render(template.getBody(), request.variables());
+
+            notification.setInstitution(template.getInstitution());
+            notification.setUser(user);
+            notification.setTemplate(template);
+            notification.setCategory(request.category());
+            notification.setChannel(channel);
+            notification.setSubject(subject);
+            notification.setBody(body);
+            notification.setStatus(NotificationStatus.PENDING);
+
+            notification = repository.save(notification);
+
+            // Resoudre la canal
+            NotificationChannel notificationChannel = channelResolver.resolve(channel);
+
+            String recipient =
+                    switch (channel) {
+                        case EMAIL -> user.getEmail();
+                        case SMS -> user.getPhoneNumber();
+                        case IN_APP -> user.getExternalUserId();
+                    };
+
+            try {
+                notificationChannel.send(recipient, notification);
+                notification.setStatus(NotificationStatus.SENT);
+                notification.setSentAt(Instant.now());
+
+                channelNotifications.add(new ChannelNotificationResponse(channel, notification.getStatus()));
+            } catch (Exception ex) {
+                notification.setStatus(NotificationStatus.FAILED);
+                notification.setErrorMessage(ex.getMessage());
+
+                channelNotifications.add(new ChannelNotificationResponse(channel, notification.getStatus()));
+            }
+            notification = repository.save(notification);
         }
-
-        final String RECIPIENT = switch (request.channel()) {
-            case EMAIL -> user.getEmail();
-            case SMS -> user.getPhoneNumber();
-            case IN_APP -> user.getExternalUserId();
-        };
-
-        Notification notification =
-                new Notification();
-
-        notification.setInstitution(institution);
-        notification.setTemplate(template);
-        notification.setCategory(request.category());
-        notification.setChannel(request.channel());
-        notification.setUser(user);
-
-        // Validate template variables
-        validator.validate(
-                template,
-                request.variables()
-        );
-
-        // Render template
-        TemplateRenderer renderer =
-                rendererResolver.resolve(
-                        template.getFormat()
-                );
-
-        String renderedSubject =
-                renderer.render(
-                        template.getSubject(),
-                        request.variables()
-                );
-
-        String renderedBody =
-                renderer.render(
-                        template.getBody(),
-                        request.variables()
-                );
-
-        notification.setSubject(renderedSubject);
-        notification.setBody(renderedBody);
-
-        notification.setStatus(
-                NotificationStatus.PENDING
-        );
-
-        NotificationChannel channel =
-                channelResolver.resolve(
-                        notification.getChannel()
-                );
-
-        try {
-            channel.send(RECIPIENT, notification);
-
-            notification.setStatus(
-                    NotificationStatus.SENT
-            );
-
-            notification.setSentAt(
-                    Instant.now()
-            );
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            notification.setStatus(
-                    NotificationStatus.FAILED
-            );
-
-            notification.setErrorMessage(
-                    ex.getMessage()
-            );
-        }
-        return repository.save(notification);
+        return NotificationMapper.toResponse(notification, channelNotifications);
     }
 }

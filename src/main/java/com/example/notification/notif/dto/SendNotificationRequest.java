@@ -16,8 +16,6 @@ public record SendNotificationRequest(
 
         NotificationCategory category,
 
-        ChannelType channel,
-
         Map<String, Object> variables
 ) {
 }
